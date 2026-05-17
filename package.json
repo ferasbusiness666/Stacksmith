@@ -1,0 +1,22 @@
+{
+  "name": "stacksmith",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The local AI app studio for builders.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "stacksmith": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc",
+    "start": "node dist/cli.js studio",
+    "test": "echo \"No tests yet.\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.19",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
