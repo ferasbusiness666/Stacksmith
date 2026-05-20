@@ -1,39 +1,55 @@
 # Stacksmith
 
-The local AI app studio for builders.
+**The local AI app studio for builders.**
 
-Build websites, apps, and tools with your own AI, your own database, and code you actually own.
+Build websites, apps, dashboards, tools, and full-stack projects with your own AI, your own database path, and code you actually own.
 
-Stacksmith is an installable local AI app studio for people who want the speed of AI-assisted building without giving up ownership of their workflow. The planned product runs on your machine, opens a browser studio on localhost, connects to your chosen AI provider, creates a reviewable blueprint, and then generates a clean local project after approval.
+![Stacksmith local studio](docs/assets/stacksmith-studio.png)
 
-**Status:** Stacksmith now has an early working local MVP. The localhost studio can save local settings, connect to Ollama or OpenRouter, generate a structured blueprint with the selected provider, require approval, and write a generated React full-stack project into the user's local Stacksmith workspace. Cloud hosting, Supabase implementation, automatic command execution, and generated-project chat patching are not implemented yet.
+## ✨ What Is Stacksmith?
 
-## Why Stacksmith Exists
+Stacksmith is a local-first AI app studio. You run it on your machine, open a browser studio on localhost, connect your preferred AI provider, describe what you want to build, review the plan, and generate a clean local project.
 
-AI app builders have made it faster to turn ideas into software, but many are built around hosted platforms, fixed model choices, fixed backend choices, and project formats that are hard to move away from.
+It is inspired by the usefulness of modern AI app builders, but the direction is different:
 
-Stacksmith is designed around a different default: local-first software creation. The goal is to help builders create serious apps while keeping the generated code, database decisions, model configuration, and development workflow under their control.
+- 🖥️ **Local-first:** the studio runs on `127.0.0.1`.
+- 🔑 **Bring your own model:** Ollama and OpenRouter are supported early.
+- 📁 **Own the code:** generated apps are normal local projects.
+- 🧭 **Blueprint-first:** review the app plan before generation.
+- 🛡️ **Safety-aware:** commands are shown/reviewed, not auto-run in this MVP.
+- 🗂️ **Persistent chat history:** local chats restore after restarting Stacksmith.
 
-Stacksmith is local-only for now. It does not deploy itself, host itself, create a public URL, or run unless the user manually starts it with the CLI.
+## 🚦 Current Status
 
-## How It Works
+Stacksmith now has an early working local MVP.
 
-The current local MVP flow is:
+Working today:
 
-1. Run `stacksmith studio`.
-2. Open the local browser studio at `http://localhost:PORT`.
-3. Start a new chat and describe what you want to build.
-4. Choose Ollama or OpenRouter in Settings.
-5. Pick the active model from the chat composer.
-6. Choose a database mode and work directory for the chat.
-7. Generate a structured blueprint.
-8. Review and approve the blueprint.
-9. Generate a local project.
-10. Run the displayed commands manually.
+- CLI command: `stacksmith studio`
+- Local browser studio at `http://127.0.0.1:4317`
+- Chat-first studio UI
+- Persistent local chat history
+- Ollama and OpenRouter provider setup
+- Model picker in the composer
+- Blueprint generation with the selected provider
+- Blueprint approval flow
+- Direct Build mode for local project generation
+- React + Vite + TypeScript generated project template
+- No-database and SQLite-ready modes
+- Command safety review foundation
 
-The most important product idea is blueprint-first generation. Stacksmith should not jump from a vague prompt directly to a large codebase. It should first show what it plans to build, what it will not build yet, which files and commands are involved, and which assumptions need review.
+Not implemented yet:
 
-## Run The Local Studio Shell
+- Supabase integration
+- Automatic command execution
+- Real chat-based code patching after generation
+- Production hosting or deployment
+- Mobile app generation
+- Team/cloud accounts
+
+Stacksmith is still early. Treat generated projects as a starting point, not production-ready output.
+
+## ⚡ Quick Start
 
 Install dependencies:
 
@@ -41,7 +57,7 @@ Install dependencies:
 npm install
 ```
 
-Start the local studio shell for development:
+Start the local studio:
 
 ```bash
 npm run dev -- studio
@@ -54,13 +70,11 @@ npm run build
 npm start
 ```
 
-The studio shell runs at:
+Open:
 
 ```text
 http://127.0.0.1:4317
 ```
-
-The server binds to localhost for local studio use only. There is no external hosting, production hosting, cloud runtime, or public access in Phase 1.
 
 Health check:
 
@@ -68,94 +82,96 @@ Health check:
 http://127.0.0.1:4317/health
 ```
 
-The current studio is local-only. Prompt submission calls the configured provider to create a blueprint. Project generation writes files only after approval and only inside the selected chat work directory, which defaults to:
+Expected response:
 
-```text
-~/Stacksmith/projects
+```json
+{ "ok": true, "phase": "1-shell" }
 ```
 
-Stacksmith shows install/run commands for generated apps, but it does not run them automatically in this MVP.
+## 🧠 How It Works
 
-Each chat starts in Blueprint mode. The work directory can be changed while planning, but it locks after Stacksmith writes project files for that chat.
+The intended flow is:
 
-## Provider Setup
+```text
+Prompt → Blueprint → Approve → Generate → Run locally → Edit with chat
+```
 
-Stacksmith supports two early provider paths:
+Current MVP flow:
 
-- **Ollama:** local model calls through `http://127.0.0.1:11434`.
-- **OpenRouter:** cloud model calls with a user-supplied API key.
+1. Start the local studio.
+2. Create a chat.
+3. Choose a provider/model.
+4. Pick a database mode and work directory.
+5. Generate a blueprint or build directly.
+6. Approve the blueprint when using Blueprint mode.
+7. Generate a local project.
+8. Run the displayed commands manually.
 
-OpenRouter keys are stored with Windows DPAPI in this MVP. The key can be saved or replaced from Settings, but it is never returned to the browser UI.
+Build mode can generate directly, but Stacksmith still uses an internal structured plan so the generator has a stable shape to work from.
 
-## Command Safety
+## 🤖 Providers
 
-Stacksmith includes a command safety review layer for future command execution.
+Early provider support:
+
+- **Ollama:** local models through `http://127.0.0.1:11434`
+- **OpenRouter:** cloud models through a user-supplied API key
+
+OpenRouter keys are stored locally using Windows DPAPI in this MVP. Saved keys are never returned to the browser UI.
+
+## 🧱 Generated App Stack
+
+The first generated stack is intentionally focused:
+
+- React
+- Vite
+- TypeScript
+- Small Node/TypeScript API layer
+- Shared types
+- Optional SQLite-ready structure
+
+One reliable stack is the priority before adding more frameworks.
+
+## 🛡️ Local-Only And Safety
+
+Stacksmith does not host itself, expose public URLs, deploy apps, or run in the cloud.
+
+The local server binds to:
+
+```text
+127.0.0.1:4317
+```
 
 Command modes:
 
-- **Never run commands:** default safest mode; commands are displayed only.
-- **Manual approval:** every command requires user approval.
-- **Auto-approve safe commands:** a command must pass safety review, and if needed a separate command-checker AI, before it can be considered safe.
+- **Don't run:** safest default; commands are displayed only.
+- **Ask first:** future command execution requires explicit approval.
+- **Auto-approve:** future safe-command flow requires command safety review first.
 
-This MVP does not automatically execute generated project commands. The safety layer is present so command execution can be added later without bypassing review.
+In the current MVP, Stacksmith shows run commands but does not automatically execute generated project commands.
 
-## Planned MVP
+## 🗺️ Roadmap
 
-The first real version should focus on a local browser studio and one reliable generated-app path.
-
-Current MVP capabilities:
-
-- Local CLI command to start the studio.
-- Browser studio served from localhost.
-- AI provider connection for Ollama and OpenRouter.
-- Prompt input.
-- Blueprint generation and review.
-- Approval gate before code generation.
-- Project generation from a clean React full-stack template.
-- Local run command guidance.
-- No-database and SQLite project modes.
-- Command safety review foundation.
-
-OpenAI, Anthropic, Google, xAI, and other providers are future expansion candidates.
-
-Supabase is an important planned database path, especially for auth, storage, and cloud database workflows, but it is not implemented in the current MVP.
-
-## What Makes Stacksmith Different
-
-Stacksmith is inspired by the usefulness of modern AI app builders, but its positioning is independent.
-
-- It runs locally instead of being platform-first.
-- Users bring their own model or API key.
-- Generated projects should be normal codebases.
-- Users can choose local database workflows first and cloud database workflows later.
-- The product should understand the data layer, not only generate frontend screens.
-- Blueprint approval comes before code generation.
-- The repository is open source and should be understandable to contributors.
-
-## What Stacksmith Is Not
-
-- Not a hosted SaaS app builder.
-- Not a proprietary deployment platform.
-- Not a clone of another product.
-- Not a visual drag-and-drop builder.
-- Not a promise that AI can replace code review, testing, or judgment.
-- Not a production-ready app generator.
-- Not trying to support every framework, model, database, and deployment target in the MVP.
-
-## Roadmap
-
-- **Phase 0:** Product foundation and documentation.
-- **Phase 1:** Local studio shell.
-- **Phase 2:** Blueprint generation.
-- **Phase 3:** First app generation.
-- **Phase 4:** Database-aware generation.
-- **Phase 5:** Chat edit and fix loop.
-- **Phase 6:** Supabase and provider expansion.
-- **Phase 7:** Mobile apps, plugins, and broader ecosystem work.
+- ✅ Phase 0: product foundation and docs
+- ✅ Phase 1: local studio shell
+- ✅ Phase 2: provider-backed blueprint flow
+- ✅ Phase 3: first local project generation
+- 🚧 Phase 4: better database-aware generation
+- 🚧 Phase 5: chat edit/fix loop
+- 🔜 Phase 6: Supabase and provider expansion
+- 🔜 Phase 7: mobile apps, plugins, and deeper integrations
 
 See [docs/roadmap.md](docs/roadmap.md) for more detail.
 
-## Documentation
+## 🧩 What Stacksmith Is Not
+
+- Not a hosted SaaS builder
+- Not a deployment platform
+- Not a clone of another product
+- Not a drag-and-drop website builder
+- Not production-ready yet
+- Not trying to support every framework in the MVP
+
+## 📚 Docs
 
 - [Vision](docs/vision.md)
 - [Product Principles](docs/product-principles.md)
@@ -165,12 +181,22 @@ See [docs/roadmap.md](docs/roadmap.md) for more detail.
 - [Roadmap](docs/roadmap.md)
 - [Decision Log](docs/decision-log.md)
 
-## Contributing
+## 🤝 Contributing
 
-Stacksmith is early. The most useful contributions right now are documentation improvements, product thinking, architecture feedback, issue writing, and focused discussion around templates, provider adapters, and database modes.
+Stacksmith is early and open to focused contributions.
+
+Useful areas:
+
+- Product thinking
+- Architecture feedback
+- Provider adapters
+- Generated app templates
+- Database modes
+- Safety and command review
+- Documentation
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing changes.
 
-## License
+## 📄 License
 
 MIT. See [LICENSE](LICENSE).
