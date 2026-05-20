@@ -5,13 +5,16 @@ import os from "node:os";
 import path from "node:path";
 
 import { normalizeBlueprint } from "./blueprints.js";
-import { createProjectFiles } from "./generator.js";
+import { parseGeneratedProjectPlan, validateGeneratedProjectPlan, writeProjectFiles } from "./generator.js";
 import { getPublicSettings, updateSettings } from "./config.js";
 import { loadHistory, sanitizeHistoryState, saveHistory } from "./history.js";
 import { isAllowedLocalOrigin, parseJsonBodyText } from "./http-security.js";
+import { getAboutMetadata } from "./metadata.js";
 import {
   completeTextWithProvider,
   createOpenRouterRequest,
+  formatPromptWithHistoryContext,
+  generateProjectFilesWithProvider,
   generateBlueprintWithProvider,
   getProviderHealth,
   listAvailableModels,
@@ -29,6 +32,7 @@ import {
 } from "./session-helpers.js";
 import { decryptSecretFromStorage, encryptSecretForStorage } from "./secrets.js";
 import { createCommandReviewLog, reviewCommand } from "./safety.js";
+import { studioHtml } from "./studio-page.js";
 import { createProjectPlan, isInsideDirectory, resolveProjectStatusWorkspace, slugifyProjectName } from "./workspace.js";
 
 describe("workspace safety", () => {
@@ -140,7 +144,21 @@ describe("provider adapters", () => {
     assert.equal(request.body.messages[1].role, "user");
     assert.equal(request.body.messages[1].content, "Build an invoice app");
     assert.equal(request.body.messages[2].role, "assistant");
-    assert.equal(request.body.messages[3].content, "Add filters");
+    assert.match(request.body.messages[3].content, /Current user request/);
+    assert.match(request.body.messages[3].content, /Add filters/);
+    assert.match(request.body.messages[0].content, /Earlier conversation messages are context only/);
+  });
+
+  it("formats history as earlier context and labels the current request", () => {
+    const prompt = formatPromptWithHistoryContext("Now answer this", [
+      { role: "user", text: "Old failed request" },
+      { role: "assistant", text: "I could not do that." },
+    ]);
+
+    assert.match(prompt, /Earlier conversation context only/);
+    assert.match(prompt, /Old failed request/);
+    assert.match(prompt, /Current user request to answer now/);
+    assert.match(prompt, /Now answer this/);
   });
 
   it("parses JSON blueprint responses wrapped in model text", () => {
@@ -306,10 +324,10 @@ describe("provider adapters", () => {
     );
 
     assert.equal(text, "Ready.");
-    assert.match(prompt, /Current chat context/);
+    assert.match(prompt, /Earlier conversation context only/);
     assert.match(prompt, /User: Build a CRM/);
     assert.match(prompt, /Stacksmith: I generated a blueprint/);
-    assert.match(prompt, /Latest user message:\nWhat changed\?/);
+    assert.match(prompt, /Current user request to answer now:\nWhat changed\?/);
   });
 
   it("includes current chat context in blueprint prompts", async () => {
@@ -355,9 +373,56 @@ describe("provider adapters", () => {
     });
 
     assert.equal(blueprint.projectName, "CRM");
-    assert.match(blueprintPrompt, /Current chat context/);
+    assert.match(blueprintPrompt, /Earlier conversation context only/);
     assert.match(blueprintPrompt, /Build a local CRM/);
     assert.match(blueprintPrompt, /Add contacts/);
+  });
+
+  it("generates project files with the selected provider", async () => {
+    let prompt = "";
+    const fetcher = async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as { messages?: Array<{ content: string }> };
+      prompt = body.messages?.at(-1)?.content ?? "";
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  files: [
+                    { path: "package.json", contents: '{"scripts":{"dev":"vite"}}' },
+                    { path: "src/App.tsx", contents: "export default function App(){return <main>Hello</main>}" },
+                  ],
+                  runCommands: [{ command: "npm install", cwd: "." }],
+                }),
+              },
+            },
+          ],
+        }),
+      );
+    };
+
+    const plan = await generateProjectFilesWithProvider({
+      blueprint: normalizeBlueprint({ projectName: "CRM", summary: "Track customers." }),
+      settings: {
+        provider: "openrouter",
+        ollamaUrl: "http://127.0.0.1:11434",
+        ollamaModel: "llama3.1",
+        openRouterModel: "openai/gpt-4o-mini",
+        databaseMode: "none",
+        workspacePath: "/tmp/stacksmith",
+        commandMode: "never",
+        theme: "dark",
+        accent: "blue",
+      },
+      provider: "openrouter",
+      model: "openai/gpt-4o-mini",
+      deps: { fetch: fetcher as typeof fetch, readOpenRouterKey: async () => "sk-test" },
+    });
+
+    assert.equal(plan.files.length, 2);
+    assert.match(prompt, /Return strict JSON/);
+    assert.match(prompt, /React, Vite, TypeScript/);
   });
 
   it("resolves active provider and model settings without changing unrelated models", () => {
@@ -424,6 +489,30 @@ describe("http security helpers", () => {
   });
 });
 
+describe("studio metadata and UI shell", () => {
+  it("returns about metadata for the settings page", () => {
+    const about = getAboutMetadata();
+
+    assert.equal(about.owner, "Feras Hania");
+    assert.equal(about.github, "ferasbusiness666");
+    assert.equal(about.repoUrl, "https://github.com/ferasbusiness666/Stacksmith");
+    assert.equal(about.localServerUrl, "http://127.0.0.1:4317");
+    assert.equal(about.license, "MIT");
+    assert.equal(about.version, "0.0.0");
+  });
+
+  it("renders settings tab icons and an About tab", () => {
+    assert.match(studioHtml, /data-settings="about"/);
+    assert.match(studioHtml, /data-panel="about"/);
+    assert.match(studioHtml, /settings-tab-icon/);
+  });
+
+  it("does not render composer glow pseudo-elements that bleed into the work row", () => {
+    assert.equal(studioHtml.includes(".composer-group::before"), false);
+    assert.equal(studioHtml.includes(".composer-group::after"), false);
+  });
+});
+
 describe("persistent history", () => {
   it("round-trips sanitized full chat history without pending messages or secrets", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "stacksmith-history-"));
@@ -479,6 +568,23 @@ describe("persistent history", () => {
     });
     assert.equal(sanitized.activeSessionId, null);
     assert.deepEqual(sanitized.sessions, []);
+  });
+
+  it("drops session-only status events from persisted history", () => {
+    const history = sanitizeHistoryState({
+      version: 1,
+      activeSessionId: "chat-1",
+      sessions: [
+        {
+          id: "chat-1",
+          title: "Status test",
+          messages: [{ role: "user", text: "hello" }],
+          statusEvents: [{ text: "Thinking..." }],
+        },
+      ],
+    });
+
+    assert.equal(JSON.stringify(history).includes("Thinking"), false);
   });
 });
 
@@ -545,23 +651,57 @@ describe("secret storage", () => {
 });
 
 describe("generator", () => {
-  it("creates a React full-stack project file set", () => {
-    const blueprint = normalizeBlueprint({
-      projectName: "Invoice Dashboard",
-      summary: "Track invoices.",
-      databaseMode: "sqlite",
-      screens: ["Dashboard"],
-    });
-    const files = createProjectFiles(blueprint);
-    const paths = files.map((file) => file.path).sort();
+  it("parses model-generated project plans", () => {
+    const plan = parseGeneratedProjectPlan(`Here is JSON:
+{
+  "files": [
+    { "path": "package.json", "contents": "{\\"type\\":\\"module\\"}" },
+    { "path": "src/App.tsx", "contents": "export default function App() { return null; }" }
+  ],
+  "runCommands": [{ "command": "npm install", "cwd": "." }]
+}`);
 
-    assert.ok(paths.includes("package.json"));
-    assert.ok(paths.includes("README.md"));
-    assert.ok(paths.includes("src/App.tsx"));
-    assert.ok(paths.includes("server/index.ts"));
-    assert.ok(paths.includes("shared/types.ts"));
-    assert.ok(paths.includes(".env.example"));
-    assert.match(files.find((file) => file.path === "package.json")?.contents ?? "", /vite/);
+    assert.equal(plan.files.length, 2);
+    assert.equal(plan.files[0].path, "package.json");
+    assert.deepEqual(plan.runCommands, [{ command: "npm install", cwd: "." }]);
+  });
+
+  it("rejects unsafe model-generated project paths", () => {
+    const workspace = path.join(os.tmpdir(), "stacksmith-generated");
+    const projectPath = path.join(workspace, "demo");
+
+    assert.throws(
+      () =>
+        validateGeneratedProjectPlan(projectPath, {
+          files: [
+            { path: "../escape.txt", contents: "bad" },
+            { path: ".env", contents: "SECRET=bad" },
+          ],
+          runCommands: [],
+        }),
+      /unsafe|outside|environment/i,
+    );
+
+    assert.throws(
+      () =>
+        validateGeneratedProjectPlan(projectPath, {
+          files: [{ path: "package.json", contents: "{}" }],
+          runCommands: [{ command: "npm install", cwd: ".." }],
+        }),
+      /working directory/i,
+    );
+  });
+
+  it("writes model-generated files inside the selected project only", async () => {
+    const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "stacksmith-generated-"));
+    const projectPath = path.join(workspace, "demo");
+    const plan = validateGeneratedProjectPlan(projectPath, {
+      files: [{ path: "src/App.tsx", contents: "export default function App() { return null; }" }],
+      runCommands: [],
+    });
+
+    await writeProjectFiles(projectPath, plan.files);
+    assert.equal(await fs.readFile(path.join(projectPath, "src", "App.tsx"), "utf8"), "export default function App() { return null; }");
   });
 });
 

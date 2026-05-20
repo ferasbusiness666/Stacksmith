@@ -62,6 +62,13 @@ export type ProjectFile = {
   contents: string;
 };
 
+export type GeneratedProjectFile = ProjectFile;
+
+export type GeneratedProjectPlan = {
+  files: GeneratedProjectFile[];
+  runCommands: Array<{ command: string; cwd: string }>;
+};
+
 export type CommandDecision = "approved" | "rejected" | "needs_user_approval";
 
 export type CommandReviewInput = {

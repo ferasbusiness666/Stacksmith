@@ -6,10 +6,12 @@ import { spawnSync } from "node:child_process";
 
 import { normalizeBlueprint } from "./blueprints.js";
 import { getPublicSettings, readSettings, saveSettings, updateSettings } from "./config.js";
-import { createProjectFiles, writeProjectFiles } from "./generator.js";
+import { validateGeneratedProjectPlan, writeProjectFiles } from "./generator.js";
+import { getAboutMetadata } from "./metadata.js";
 import {
   completeTextWithProvider,
   generateBlueprintWithProvider,
+  generateProjectFilesWithProvider,
   getProviderHealth,
   listAvailableModels,
   resolveProviderModelSettings,
@@ -185,6 +187,11 @@ export async function startStudioServer(): Promise<void> {
         return;
       }
 
+      if (url.pathname === "/api/about" && req.method === "GET") {
+        sendJson(res, 200, getAboutMetadata());
+        return;
+      }
+
       if (url.pathname === "/api/history" && req.method === "POST") {
         const body = await readJson(req);
         const history = sanitizeHistoryState(body);
@@ -356,22 +363,35 @@ export async function startStudioServer(): Promise<void> {
         }
 
         const blueprint = normalizeBlueprint(body.blueprint) as Blueprint;
-        const settings = await readSettings();
+        const currentSettings = await readSettings();
+        const settings = readSelectedSettings(currentSettings, body);
         const workspacePath = readOptionalPath(body.workDirectory) ?? settings.workspacePath;
-        await ensureWorkspace(workspacePath);
         const plan = await createAvailableProjectPlan({
           workspacePath,
           projectName: blueprint.projectName,
         });
-        const files = createProjectFiles(blueprint);
-        await writeProjectFiles(plan.projectPath, files);
+        const generatedPlan = await generateProjectFilesWithProvider({
+          blueprint,
+          settings,
+          provider: settings.provider,
+          model: settings.provider === "openrouter" ? settings.openRouterModel : settings.ollamaModel,
+        });
+        const validatedPlan = validateGeneratedProjectPlan(plan.projectPath, generatedPlan);
+        await ensureWorkspace(workspacePath);
+        await writeProjectFiles(plan.projectPath, validatedPlan.files);
+        const runCommands = validatedPlan.runCommands.length
+          ? validatedPlan.runCommands.map((command) => ({
+              command: command.command,
+              cwd: command.cwd === "." ? plan.projectPath : path.resolve(plan.projectPath, command.cwd),
+            }))
+          : [
+              { command: "npm install", cwd: plan.projectPath },
+              { command: "npm run dev", cwd: plan.projectPath },
+            ];
         sendJson(res, 200, {
           projectPath: plan.projectPath,
-          files: files.map((file) => file.path),
-          runCommands: [
-            { command: "npm install", cwd: plan.projectPath },
-            { command: "npm run dev", cwd: plan.projectPath },
-          ],
+          files: validatedPlan.files.map((file) => file.path),
+          runCommands,
         });
         return;
       }

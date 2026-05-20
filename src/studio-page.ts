@@ -464,7 +464,8 @@ export const studioHtml = `<!doctype html>
         white-space: pre-wrap;
       }
 
-      .message.pending .bubble p {
+      .message.pending .bubble p,
+      .status-event-text {
         animation: pending-sheen 1.45s linear infinite;
         background: linear-gradient(90deg, var(--text-secondary), var(--text-primary), var(--text-secondary));
         background-size: 220% 100%;
@@ -481,6 +482,20 @@ export const studioHtml = `<!doctype html>
         to {
           background-position: -220% 0;
         }
+      }
+
+      .status-event {
+        align-items: center;
+        color: var(--text-muted);
+        display: flex;
+        gap: 9px;
+        font-size: 13px;
+        margin: -2px 0 18px;
+      }
+
+      .status-event .icon {
+        color: var(--text-faint);
+        flex: 0 0 auto;
       }
 
       .blueprint-panel h2,
@@ -629,37 +644,8 @@ export const studioHtml = `<!doctype html>
         margin: 0 auto;
         max-width: 728px;
         --mode-accent: var(--blue);
-        padding-top: 14px;
         position: relative;
         width: min(728px, 100%);
-      }
-
-      .composer-group::before {
-        background: var(--mode-accent);
-        border-radius: 999px;
-        content: "";
-        filter: blur(18px);
-        height: 16px;
-        left: 0;
-        opacity: 0.28;
-        pointer-events: none;
-        position: absolute;
-        right: 0;
-        top: 0;
-      }
-
-      .composer-group::after {
-        background: radial-gradient(ellipse at top, color-mix(in srgb, var(--mode-accent) 32%, transparent), transparent 66%);
-        content: "";
-        filter: blur(24px);
-        height: 74px;
-        left: -8px;
-        opacity: 0.12;
-        pointer-events: none;
-        position: absolute;
-        right: -8px;
-        top: 2px;
-        z-index: -1;
       }
 
       .composer-group[data-mode="build"] {
@@ -676,10 +662,9 @@ export const studioHtml = `<!doctype html>
 
       .composer {
         background: var(--bg-panel);
-        border: 1px solid color-mix(in srgb, var(--mode-accent) 42%, var(--border-soft));
+        border: 1px solid color-mix(in srgb, var(--mode-accent) 30%, var(--border-soft));
         border-bottom: 0;
         border-radius: 16px 16px 0 0;
-        box-shadow: 0 -1px 18px color-mix(in srgb, var(--mode-accent) 18%, transparent);
         overflow: visible;
         position: relative;
       }
@@ -1008,6 +993,16 @@ export const studioHtml = `<!doctype html>
         padding: 0 10px;
       }
 
+      .settings-tab-icon {
+        color: var(--text-muted);
+        flex: 0 0 auto;
+      }
+
+      .settings-nav button.active .settings-tab-icon,
+      .settings-nav button:hover .settings-tab-icon {
+        color: var(--accent);
+      }
+
       .settings-content {
         margin: 0 auto;
         max-width: 820px;
@@ -1098,6 +1093,15 @@ export const studioHtml = `<!doctype html>
         color: var(--text-secondary);
         font-size: 13px;
         text-align: right;
+      }
+
+      .setting-value a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .setting-value a:hover {
+        text-decoration: underline;
       }
 
       input,
@@ -1541,14 +1545,15 @@ export const studioHtml = `<!doctype html>
             </button>
             <p class="section-label">Settings</p>
             <nav class="settings-nav">
-              <button class="active" type="button" data-settings="general">General</button>
-              <button type="button" data-settings="appearance">Appearance</button>
-              <button type="button" data-settings="providers">Providers</button>
-              <button type="button" data-settings="database">Database</button>
-              <button type="button" data-settings="safety">Safety</button>
-              <button type="button" data-settings="mcp">MCP</button>
-              <button type="button" data-settings="skills">Skills</button>
-              <button type="button" data-settings="local-server">Local Server</button>
+              <button class="active" type="button" data-settings="general"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16" fill="none" stroke="currentColor" stroke-linecap="round" /></svg><span>General</span></button>
+              <button type="button" data-settings="appearance"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 1 0 8 8 4 4 0 0 1-4-4 4 4 0 0 1-4-4Z" fill="none" stroke="currentColor" stroke-linejoin="round" /></svg><span>Appearance</span></button>
+              <button type="button" data-settings="providers"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 16h10M5 4h14a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2Zm-2 8h18v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6Z" fill="none" stroke="currentColor" stroke-linejoin="round" /></svg><span>Providers</span></button>
+              <button type="button" data-settings="database"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3Zm0 0v10c0 1.7 3.1 3 7 3s7-1.3 7-3V7" fill="none" stroke="currentColor" stroke-linejoin="round" /></svg><span>Database</span></button>
+              <button type="button" data-settings="safety"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 6v5c0 4.3-2.8 8-7 10-4.2-2-7-5.7-7-10V6l7-3Z" fill="none" stroke="currentColor" stroke-linejoin="round" /></svg><span>Safety</span></button>
+              <button type="button" data-settings="mcp"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h8M7 6h.01M17 6h.01M7 18h.01M17 18h.01M9 6h6l3 6-3 6H9l-3-6 3-6Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg><span>MCP</span></button>
+              <button type="button" data-settings="skills"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 8h14M7 16h10M5 8l2-4h10l2 4-7 13L5 8Z" fill="none" stroke="currentColor" stroke-linejoin="round" /></svg><span>Skills</span></button>
+              <button type="button" data-settings="local-server"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v6H6V4Zm0 10h12v6H6v-6Zm3-7h.01M9 17h.01" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Local Server</span></button>
+              <button type="button" data-settings="about"><svg class="icon settings-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v-5m0-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg><span>About</span></button>
             </nav>
           </aside>
 
@@ -1562,8 +1567,8 @@ export const studioHtml = `<!doctype html>
                   <input id="workspace-path" />
                 </div>
                 <div class="setting-row">
-                  <div><strong>Chat history</strong><span>Current chats live in this browser session only.</span></div>
-                  <div class="setting-value">Session only</div>
+                  <div><strong>Chat history</strong><span>Chats are persisted locally in Stacksmith app data.</span></div>
+                  <div class="setting-value">Local history</div>
                 </div>
               </div>
               <button class="primary-button" type="button" id="save-general">Save General</button>
@@ -1693,6 +1698,41 @@ export const studioHtml = `<!doctype html>
                 <div class="setting-row">
                   <div><strong>Health route</strong><span>Local readiness endpoint.</span></div>
                   <div class="setting-value">/health</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-panel" data-panel="about">
+              <h2>About</h2>
+              <div class="settings-group">
+                <h3>Stacksmith</h3>
+                <div class="setting-row">
+                  <div><strong>Owner</strong><span>Project maintainer.</span></div>
+                  <div class="setting-value" id="about-owner">Feras Hania</div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>GitHub</strong><span>Maintainer account.</span></div>
+                  <div class="setting-value" id="about-github">ferasbusiness666</div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>Repository</strong><span>Public project repo.</span></div>
+                  <div class="setting-value"><a id="about-repo" href="https://github.com/ferasbusiness666/Stacksmith" target="_blank" rel="noreferrer">github.com/ferasbusiness666/Stacksmith</a></div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>Version</strong><span>Package version.</span></div>
+                  <div class="setting-value" id="about-version">0.0.0</div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>Local server</strong><span>Stacksmith only serves the local studio.</span></div>
+                  <div class="setting-value" id="about-local-server">http://127.0.0.1:4317</div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>License</strong><span>Open-source license.</span></div>
+                  <div class="setting-value" id="about-license">MIT</div>
+                </div>
+                <div class="setting-row">
+                  <div><strong>Status</strong><span>Current product stage.</span></div>
+                  <div class="setting-value" id="about-status">Local MVP</div>
                 </div>
               </div>
             </section>
@@ -1838,6 +1878,15 @@ export const studioHtml = `<!doctype html>
       const settingsPanels = Array.from(document.querySelectorAll("[data-panel]"));
       const themeButtons = Array.from(document.querySelectorAll("[data-theme-choice]"));
       const accentButtons = Array.from(document.querySelectorAll("[data-accent-choice]"));
+      const aboutFields = {
+        owner: document.getElementById("about-owner"),
+        github: document.getElementById("about-github"),
+        repo: document.getElementById("about-repo"),
+        version: document.getElementById("about-version"),
+        localServer: document.getElementById("about-local-server"),
+        license: document.getElementById("about-license"),
+        status: document.getElementById("about-status"),
+      };
 
       let settings = null;
       let sessions = [];
@@ -1918,8 +1967,22 @@ export const studioHtml = `<!doctype html>
           version: 1,
           activeSessionId,
           sessions: sessions.map((session) => ({
-            ...session,
+            id: session.id,
+            title: session.title,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt,
+            workDirectory: session.workDirectory,
+            workDirectoryLocked: session.workDirectoryLocked,
+            generatedProjectPath: session.generatedProjectPath,
+            databaseMode: session.databaseMode,
+            provider: session.provider,
+            model: session.model,
+            mode: session.mode,
             messages: session.messages.filter((message) => !message.pending),
+            blueprint: session.blueprint,
+            awaitingBlueprintDecision: session.awaitingBlueprintDecision,
+            refiningBlueprint: session.refiningBlueprint,
+            generatedProject: session.generatedProject,
           })),
         };
       }
@@ -1947,6 +2010,7 @@ export const studioHtml = `<!doctype html>
           model: session.model || (session.provider === "openrouter" ? "openai/gpt-4o-mini" : "llama3.1"),
           mode: modeConfig[session.mode] ? session.mode : "blueprint",
           messages: Array.isArray(session.messages) ? session.messages : [],
+          statusEvents: [],
           blueprint: session.blueprint || null,
           awaitingBlueprintDecision: session.awaitingBlueprintDecision === true,
           refiningBlueprint: session.refiningBlueprint === true,
@@ -2135,6 +2199,19 @@ export const studioHtml = `<!doctype html>
         renderUsage();
       }
 
+      function addStatusEvent(session, text) {
+        const event = { id: "status-" + Date.now() + "-" + Math.random().toString(16).slice(2), text };
+        session.statusEvents = Array.isArray(session.statusEvents) ? session.statusEvents : [];
+        session.statusEvents.push(event);
+        renderThread();
+        return event.id;
+      }
+
+      function removeStatusEvent(session, eventId) {
+        if (!session || !Array.isArray(session.statusEvents)) return;
+        session.statusEvents = session.statusEvents.filter((event) => event.id !== eventId);
+      }
+
       function estimateTokens(text) {
         const trimmed = String(text || "").trim();
         return trimmed ? Math.max(1, Math.ceil(trimmed.length / 4)) : 0;
@@ -2215,6 +2292,18 @@ export const studioHtml = `<!doctype html>
           })
           .join("");
 
+        if (Array.isArray(session.statusEvents) && session.statusEvents.length) {
+          html += session.statusEvents
+            .map(
+              (event) =>
+                '<div class="status-event">' +
+                '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" fill="none" stroke="currentColor" stroke-linecap="round" /></svg>' +
+                '<span class="status-event-text">' + escapeHtml(event.text) + '</span>' +
+                '</div>',
+            )
+            .join("");
+        }
+
         if (session.blueprint) {
           html += renderBlueprint(session.blueprint);
         }
@@ -2291,6 +2380,22 @@ export const studioHtml = `<!doctype html>
         applySettingsToUi();
       }
 
+      async function loadAboutMetadata() {
+        try {
+          const about = await api("/api/about", { method: "GET" });
+          aboutFields.owner.textContent = about.owner || "Feras Hania";
+          aboutFields.github.textContent = about.github || "ferasbusiness666";
+          aboutFields.repo.textContent = about.repoUrl || "https://github.com/ferasbusiness666/Stacksmith";
+          aboutFields.repo.href = about.repoUrl || "https://github.com/ferasbusiness666/Stacksmith";
+          aboutFields.version.textContent = about.version || "0.0.0";
+          aboutFields.localServer.textContent = about.localServerUrl || "http://127.0.0.1:4317";
+          aboutFields.license.textContent = about.license || "MIT";
+          aboutFields.status.textContent = about.status || "Local MVP";
+        } catch {
+          // Static fallback text is already rendered in the HTML.
+        }
+      }
+
       function applySettingsToUi() {
         if (!settings) return;
         body.setAttribute("data-theme", settings.theme);
@@ -2364,13 +2469,12 @@ export const studioHtml = `<!doctype html>
         lockWorkDirectoryForSession(session);
         syncActiveModelToSession(session);
         session.messages.push({ role: "user", text: trimmed, memory: true });
-        session.messages.push({ role: "assistant", text: loadingMessageForMode(activeMode), pending: true, memory: false });
         session.blueprint = null;
         session.awaitingBlueprintDecision = false;
         session.refiningBlueprint = false;
         session.generatedProject = null;
         touchSession(session);
-        renderThread();
+        const statusId = addStatusEvent(session, loadingMessageForMode(activeMode));
         persistHistory();
         sendButton.disabled = true;
 
@@ -2381,7 +2485,8 @@ export const studioHtml = `<!doctype html>
               method: "POST",
               body: JSON.stringify({ prompt: trimmed, mode: activeMode, provider: activeProvider, model: activeModel, history }),
             });
-            session.messages[session.messages.length - 1] = { role: "assistant", text: data.message, memory: true };
+            removeStatusEvent(session, statusId);
+            session.messages.push({ role: "assistant", text: data.message, memory: true });
           } else {
             const data = await api("/api/blueprints", {
               method: "POST",
@@ -2396,36 +2501,35 @@ export const studioHtml = `<!doctype html>
             if (activeMode === "build") {
               const generated = await api("/api/projects/generate", {
                 method: "POST",
-                body: JSON.stringify({ blueprint: data.blueprint, workDirectory: session.workDirectory }),
+                body: JSON.stringify({
+                  blueprint: data.blueprint,
+                  workDirectory: session.workDirectory,
+                  provider: activeProvider,
+                  model: activeModel,
+                }),
               });
+              removeStatusEvent(session, statusId);
               session.blueprint = null;
               session.awaitingBlueprintDecision = false;
               session.generatedProject = generated;
               session.generatedProjectPath = generated.projectPath;
               lockWorkDirectoryForSession(session);
               touchSession(session);
-              session.messages[session.messages.length - 1] = {
-                role: "assistant",
-                text: "Project generated. Run the displayed commands manually when ready.",
-                memory: false,
-              };
             } else {
+              removeStatusEvent(session, statusId);
               session.blueprint = data.blueprint;
               session.awaitingBlueprintDecision = true;
               touchSession(session);
-              session.messages[session.messages.length - 1] = {
-                role: "assistant",
-                text: "Blueprint generated. Review it before generating a project.",
-                memory: true,
-              };
             }
           }
         } catch (error) {
-          session.messages[session.messages.length - 1] = {
+          removeStatusEvent(session, statusId);
+          session.messages.push({
             role: "assistant",
             text: friendlyError(error),
             error: true,
-          };
+            memory: false,
+          });
           touchSession(session);
         } finally {
           sendButton.disabled = false;
@@ -2447,32 +2551,33 @@ export const studioHtml = `<!doctype html>
         const blueprint = session.blueprint;
         session.awaitingBlueprintDecision = false;
         session.blueprint = null;
-        session.messages.push({ role: "assistant", text: "Building project...", pending: true, memory: false });
+        const statusId = addStatusEvent(session, "Writing project files...");
         touchSession(session);
-        renderThread();
         persistHistory();
 
         try {
           const data = await api("/api/projects/generate", {
             method: "POST",
-            body: JSON.stringify({ blueprint, workDirectory: session.workDirectory }),
+            body: JSON.stringify({
+              blueprint,
+              workDirectory: session.workDirectory,
+              provider: activeProvider,
+              model: activeModel,
+            }),
           });
+          removeStatusEvent(session, statusId);
           session.generatedProject = data;
           session.generatedProjectPath = data.projectPath;
           lockWorkDirectoryForSession(session);
           touchSession(session);
-          session.messages[session.messages.length - 1] = {
-            role: "assistant",
-            text: "Project generated. Run the displayed commands manually when ready.",
-            memory: false,
-          };
         } catch (error) {
-          session.messages[session.messages.length - 1] = {
+          removeStatusEvent(session, statusId);
+          session.messages.push({
             role: "assistant",
             text: friendlyError(error),
             error: true,
             memory: false,
-          };
+          });
           touchSession(session);
         }
 
@@ -2608,6 +2713,7 @@ export const studioHtml = `<!doctype html>
           model: activeModel,
           mode: "blueprint",
           messages: [],
+          statusEvents: [],
           blueprint: null,
           awaitingBlueprintDecision: false,
           refiningBlueprint: false,
@@ -3009,6 +3115,7 @@ export const studioHtml = `<!doctype html>
 
       loadSettings()
         .then(() => {
+          loadAboutMetadata();
           return loadHistoryState();
         })
         .catch((error) => {
@@ -3027,6 +3134,7 @@ export const studioHtml = `<!doctype html>
               model: activeModel,
               mode: "chat",
               messages: [{ role: "assistant", text: friendlyError(error), error: true, memory: false }],
+              statusEvents: [],
               blueprint: null,
               awaitingBlueprintDecision: false,
               refiningBlueprint: false,

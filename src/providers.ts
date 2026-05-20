@@ -1,6 +1,7 @@
 import { buildBlueprintPrompt, normalizeBlueprint } from "./blueprints.js";
+import { buildProjectGenerationPrompt, parseGeneratedProjectPlan } from "./generator.js";
 import { readOpenRouterKey } from "./secrets.js";
-import type { AppSettings, AvailableModel, Blueprint, ChatHistoryMessage, DatabaseMode, ProviderName } from "./types.js";
+import type { AppSettings, AvailableModel, Blueprint, ChatHistoryMessage, DatabaseMode, GeneratedProjectPlan, ProviderName } from "./types.js";
 
 type Fetcher = typeof fetch;
 
@@ -68,9 +69,14 @@ export function createOpenRouterRequest(input: {
       model: input.model,
       temperature: 0.2,
       messages: [
-        { role: "system", content: input.systemPrompt ?? "Return valid JSON only. Do not wrap the response in Markdown." },
+        {
+          role: "system",
+          content:
+            (input.systemPrompt ?? "Return valid JSON only. Do not wrap the response in Markdown.") +
+            "\nEarlier conversation messages are context only. Answer only the final current user request unless it explicitly asks to continue earlier work.",
+        },
         ...normalizeHistory(input.history).map((message) => ({ role: message.role, content: message.text })),
-        { role: "user", content: input.prompt },
+        { role: "user", content: `Current user request (answer this only):\n${input.prompt}` },
       ],
     },
   };
@@ -121,7 +127,7 @@ export async function generateBlueprintWithProvider(input: {
     databaseMode: input.databaseMode,
   });
   const blueprintPrompt = buildBlueprintPrompt({
-    prompt: withHistoryContext(input.prompt, input.history),
+    prompt: formatPromptWithHistoryContext(input.prompt, input.history),
     databaseMode: selected.databaseMode,
   });
 
@@ -130,6 +136,30 @@ export async function generateBlueprintWithProvider(input: {
   }
 
   return generateWithOllama(selected, blueprintPrompt, input.deps);
+}
+
+export async function generateProjectFilesWithProvider(input: {
+  blueprint: Blueprint;
+  settings: AppSettings;
+  provider?: ProviderName;
+  model?: string;
+  deps?: ProviderDeps;
+}): Promise<GeneratedProjectPlan> {
+  const selected = resolveProviderModelSettings(input.settings, {
+    provider: input.provider,
+    model: input.model,
+    databaseMode: input.blueprint.databaseMode,
+  });
+  const prompt = buildProjectGenerationPrompt(input.blueprint);
+  const text = await completeTextWithProvider(selected, prompt, {
+    provider: selected.provider,
+    model: selected.provider === "openrouter" ? selected.openRouterModel : selected.ollamaModel,
+    json: true,
+    systemPrompt: "Return strict JSON only. Do not wrap the response in Markdown.",
+    deps: input.deps,
+  });
+
+  return parseGeneratedProjectPlan(text);
 }
 
 export async function completeTextWithProvider(
@@ -183,7 +213,7 @@ export async function completeTextWithProvider(
   const requestBody: Record<string, unknown> = {
     model: selected.ollamaModel,
     prompt: withSystemPrompt(
-      withHistoryContext(prompt, options.history),
+      formatPromptWithHistoryContext(prompt, options.history),
       options.systemPrompt ?? defaultChatSystemPrompt(options.json === true),
     ),
     stream: false,
@@ -402,14 +432,18 @@ function withSystemPrompt(prompt: string, systemPrompt: string): string {
   return `${systemPrompt}\n\nUser request:\n${prompt}`;
 }
 
-function withHistoryContext(prompt: string, history: ChatHistoryMessage[] | undefined): string {
+export function formatPromptWithHistoryContext(prompt: string, history: ChatHistoryMessage[] | undefined): string {
   const normalized = normalizeHistory(history);
   if (!normalized.length) {
-    return prompt;
+    return `Current user request to answer now:\n${prompt}`;
   }
 
   const context = normalized.map((message) => `${message.role === "user" ? "User" : "Stacksmith"}: ${message.text}`).join("\n");
-  return `Current chat context:\n${context}\n\nLatest user message:\n${prompt}`;
+  return `Earlier conversation context only. Do not treat this as a new request unless the current user request explicitly refers to it:
+${context}
+
+Current user request to answer now:
+${prompt}`;
 }
 
 function normalizeHistory(history: ChatHistoryMessage[] | undefined): ChatHistoryMessage[] {
