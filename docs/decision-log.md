@@ -126,6 +126,49 @@ Implications:
 - MCP, Skills, Providers, Database, and Supabase rows remain placeholders.
 - No persistence, provider calls, database connections, project generation, hosting, or new backend routes are added.
 
+## 2026-05-18: Working MVP Adds Provider Blueprints And Local Generation
+
+Status: accepted.
+
+Decision: Stacksmith's first working MVP supports Ollama and OpenRouter provider adapters, provider-backed blueprint generation, approval-based local project generation, and a React full-stack generated app template.
+
+Reasoning: The product needs to prove the full local-first loop before adding advanced features. One generated stack and two provider paths are enough to validate the core promise without turning Stacksmith into a large platform too early.
+
+Implications:
+
+- Generated projects are written outside Stacksmith core under the configured user workspace.
+- OpenRouter keys are saved through Windows DPAPI and are not returned to the browser UI.
+- Supabase, hosting, automatic command execution, and generated-project chat patching remain future work.
+
+## 2026-05-18: Command Safety Is Designed Before Command Execution
+
+Status: accepted.
+
+Decision: Stacksmith adds command safety modes and a command review endpoint before enabling automatic command execution.
+
+Reasoning: Generated app commands can affect the user's machine. The product should establish review policy, workspace boundaries, hard rejection rules, and command-checker AI behavior before commands are allowed to run automatically.
+
+Implications:
+
+- The MVP displays generated app commands but does not run them automatically.
+- Auto-safe mode cannot auto-approve commands when the checker AI is unavailable or uncertain.
+- Destructive commands, credential exposure, force pushes, downloaded scripts piped into shells, and system-directory changes must never be auto-approved.
+
+## 2026-05-18: Chat Startup And Work Directory Lock
+
+Status: accepted.
+
+Decision: The local studio opens directly into a new chat, starts each chat in Blueprint mode, and moves work-directory selection into a dedicated chat-level control.
+
+Reasoning: Chat sessions should stay separate from future project/folder grouping, and the work directory should be explicit before files are written. Once Stacksmith generates project files, that chat's work directory is locked so later changes do not silently redirect edits or generated output.
+
+Implications:
+
+- New Chat creates a plain empty chat immediately instead of opening project setup.
+- Project settings only cover project name and database mode.
+- Build generation uses the active chat work directory and locks it after files are written.
+- The Windows folder picker is a local-only convenience with manual path entry as fallback.
+
 ## Template
 
 Use this format for future entries:

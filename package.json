@@ -12,7 +12,7 @@
     "dev": "tsx src/cli.ts",
     "build": "tsc",
     "start": "node dist/cli.js studio",
-    "test": "echo \"No tests yet.\""
+    "test": "npm run build && node --test \"dist/**/*.test.js\""
   },
   "devDependencies": {
     "@types/node": "^22.15.19",

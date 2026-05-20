@@ -6,7 +6,7 @@ Build websites, apps, and tools with your own AI, your own database, and code yo
 
 Stacksmith is an installable local AI app studio for people who want the speed of AI-assisted building without giving up ownership of their workflow. The planned product runs on your machine, opens a browser studio on localhost, connects to your chosen AI provider, creates a reviewable blueprint, and then generates a clean local project after approval.
 
-**Status:** Stacksmith is currently in the Phase 2 local chat shell stage. A localhost studio shell exists with normal chat-style local mock responses and session-only appearance controls; real AI blueprint generation, AI provider calls, database integration, cloud hosting, public hosting, and project generation are not implemented yet.
+**Status:** Stacksmith now has an early working local MVP. The localhost studio can save local settings, connect to Ollama or OpenRouter, generate a structured blueprint with the selected provider, require approval, and write a generated React full-stack project into the user's local Stacksmith workspace. Cloud hosting, Supabase implementation, automatic command execution, and generated-project chat patching are not implemented yet.
 
 ## Why Stacksmith Exists
 
@@ -18,18 +18,18 @@ Stacksmith is local-only for now. It does not deploy itself, host itself, create
 
 ## How It Works
 
-The planned full flow is:
+The current local MVP flow is:
 
 1. Run `stacksmith studio`.
 2. Open the local browser studio at `http://localhost:PORT`.
-3. Create a project and describe what you want to build.
-4. Choose or connect an AI provider.
-5. Choose a database mode.
-6. Generate a structured blueprint.
-7. Review and approve the blueprint.
-8. Generate a local project.
-9. Run and preview the app locally.
-10. Refine the project through chat-based edits.
+3. Start a new chat and describe what you want to build.
+4. Choose Ollama or OpenRouter in Settings.
+5. Pick the active model from the chat composer.
+6. Choose a database mode and work directory for the chat.
+7. Generate a structured blueprint.
+8. Review and approve the blueprint.
+9. Generate a local project.
+10. Run the displayed commands manually.
 
 The most important product idea is blueprint-first generation. Stacksmith should not jump from a vague prompt directly to a large codebase. It should first show what it plans to build, what it will not build yet, which files and commands are involved, and which assumptions need review.
 
@@ -68,29 +68,57 @@ Health check:
 http://127.0.0.1:4317/health
 ```
 
-The current studio is still local-only. Prompt submission creates a short deterministic chat response with client-side UI logic only. It does not call AI providers, connect databases, save chats, write files, or generate app projects. Settings controls are placeholder-only except for session-only light/dark mode and accent color controls; sample history items are not saved chats.
+The current studio is local-only. Prompt submission calls the configured provider to create a blueprint. Project generation writes files only after approval and only inside the selected chat work directory, which defaults to:
+
+```text
+~/Stacksmith/projects
+```
+
+Stacksmith shows install/run commands for generated apps, but it does not run them automatically in this MVP.
+
+Each chat starts in Blueprint mode. The work directory can be changed while planning, but it locks after Stacksmith writes project files for that chat.
+
+## Provider Setup
+
+Stacksmith supports two early provider paths:
+
+- **Ollama:** local model calls through `http://127.0.0.1:11434`.
+- **OpenRouter:** cloud model calls with a user-supplied API key.
+
+OpenRouter keys are stored with Windows DPAPI in this MVP. The key can be saved or replaced from Settings, but it is never returned to the browser UI.
+
+## Command Safety
+
+Stacksmith includes a command safety review layer for future command execution.
+
+Command modes:
+
+- **Never run commands:** default safest mode; commands are displayed only.
+- **Manual approval:** every command requires user approval.
+- **Auto-approve safe commands:** a command must pass safety review, and if needed a separate command-checker AI, before it can be considered safe.
+
+This MVP does not automatically execute generated project commands. The safety layer is present so command execution can be added later without bypassing review.
 
 ## Planned MVP
 
 The first real version should focus on a local browser studio and one reliable generated-app path.
 
-MVP targets:
+Current MVP capabilities:
 
 - Local CLI command to start the studio.
 - Browser studio served from localhost.
-- New project flow.
-- AI provider connection.
+- AI provider connection for Ollama and OpenRouter.
 - Prompt input.
 - Blueprint generation and review.
 - Approval gate before code generation.
-- Project generation from a clean template.
-- Local run or preview guidance.
-- Basic chat edits after generation.
+- Project generation from a clean React full-stack template.
+- Local run command guidance.
 - No-database and SQLite project modes.
+- Command safety review foundation.
 
-Likely early provider targets are OpenRouter and Ollama. OpenAI, Anthropic, Google, xAI, and other providers are future expansion candidates.
+OpenAI, Anthropic, Google, xAI, and other providers are future expansion candidates.
 
-Supabase is an important planned database path, especially for auth, storage, and cloud database workflows, but it should not block the first local-first MVP.
+Supabase is an important planned database path, especially for auth, storage, and cloud database workflows, but it is not implemented in the current MVP.
 
 ## What Makes Stacksmith Different
 
@@ -111,7 +139,7 @@ Stacksmith is inspired by the usefulness of modern AI app builders, but its posi
 - Not a clone of another product.
 - Not a visual drag-and-drop builder.
 - Not a promise that AI can replace code review, testing, or judgment.
-- Not currently a working studio.
+- Not a production-ready app generator.
 - Not trying to support every framework, model, database, and deployment target in the MVP.
 
 ## Roadmap
